@@ -5,6 +5,7 @@ import os
 load_dotenv()
 
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from youtube_transcript_api import YouTubeTranscriptApi
 
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
