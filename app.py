@@ -27,7 +27,7 @@ def extract_transcript_details(youtube_video_url):
         except Exception:
             try:
                 transcript = transcript_list.find_generated_transcript(['en', 'hi', 'es', 'fr'])
-        except Exception:
+            except Exception:
                   raise Exception("This video does not have any manual English or auto-generated captions available.")
         if transcript.is_translatable:
             transcript = transcript.translate('en')
