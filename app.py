@@ -38,31 +38,50 @@ def extract_transcript_details(youtube_video_url):
         raise e
 
 def generate_gemini_content(transcript_text, prompt):
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content(prompt + transcript_text, safety_settings=safety_settings)
-    if response.candidates and response.candidates[0].finish_reason.name == "SAFETY":
-        return "⚠️ Summary failed: The YouTube transcript triggered Google's safety filters and was blocked."
-    return response.text
+    try:
+        safety_settings = {
+            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt + transcript_text, safety_settings=safety_settings)
+        
+        if not response.candidates:
+            return "⚠️ Summary failed: The YouTube transcript was completely blocked by Google's content filters."
+            
+        if response.candidates[0].finish_reason.name == "SAFETY":
+            return "⚠️ Summary failed: The YouTube transcript triggered Google's safety filters and was blocked."
+            
+        return response.text
+    except Exception as e:
+        return f"An error occurred while generating content: {str(e)}"
 
 
 st.title("🗒️ Youtube Transcript to Detailed Notes Converter")
 
-youtube_link = st.text_input("Enter you Youtube URL here...")
+youtube_link = st.text_input("Enter your Youtube URL here...")
 
 if youtube_link:
-    video_id = youtube_link.split("=")[1]
-    st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", use_container_width=True)
+    try:
+        video_id = youtube_link.split("=")[1]
+        # FIX: Updated use_container_width=True to width='stretch' to fix the console warning
+        st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", width='stretch')
+    except IndexError:
+        st.warning("Please enter a valid YouTube link format (containing '?v=')")
 
 if st.button("Get Detailed Notes"):
-    transcript_text = extract_transcript_details(youtube_link)
+    if youtube_link:
+        with st.spinner("Fetching transcript and summarizing..."):
+            try:
+                transcript_text = extract_transcript_details(youtube_link)
 
-    if transcript_text:
-        summary = generate_gemini_content(transcript_text,prompt)
-        st.markdown("📝 Detailed Summary : ")
-        st.write(summary)
+                if transcript_text:
+                    summary = generate_gemini_content(transcript_text, prompt)
+                    st.markdown("📝 **Detailed Summary :** ")
+                    st.write(summary)
+            except Exception as e:
+                st.error(f"Could not retrieve transcript: {str(e)}. Make sure the video has captions available.")
+    else:
+        st.warning("Please provide a URL first.")
