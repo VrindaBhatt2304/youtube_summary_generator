@@ -37,9 +37,16 @@ def extract_transcript_details(youtube_video_url):
         raise e
 
 def generate_gemini_content(transcript_text, prompt):
-
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
     model = genai.GenerativeModel("gemini-2.5-flash")
-    response = model.generate_content(prompt + transcript_text)
+    response = model.generate_content(prompt + transcript_text, safety_settings=safety_settings)
+    if response.candidates and response.candidates[0].finish_reason.name == "SAFETY":
+        return "⚠️ Summary failed: The YouTube transcript triggered Google's safety filters and was blocked."
     return response.text
 
 
