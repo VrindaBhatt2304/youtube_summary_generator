@@ -22,7 +22,13 @@ def extract_transcript_details(youtube_video_url):
 
         yt_api = YouTubeTranscriptApi()
         transcript_list = yt_api.list(video_id)
-        transcript = transcript_list.find_transcript(['en', 'hi', 'es', 'fr'])
+        try:
+            transcript = transcript_list.find_manually_created_transcript(['en'])
+        except Exception:
+            try:
+                transcript = transcript_list.find_generated_transcript(['en', 'hi', 'es', 'fr'])
+        except Exception:
+                  raise Exception("This video does not have any manual English or auto-generated captions available.")
         if transcript.is_translatable:
             transcript = transcript.translate('en')
 
