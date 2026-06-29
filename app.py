@@ -70,7 +70,6 @@ youtube_link = st.text_input("Enter your Youtube URL here...")
 if youtube_link:
     try:
         video_id = youtube_link.split("=")[1]
-        # FIX: Updated use_container_width=True to width='stretch' to fix the console warning
         st.image(f"http://img.youtube.com/vi/{video_id}/0.jpg", width='stretch')
     except IndexError:
         st.warning("Please enter a valid YouTube link format (containing '?v=')")
